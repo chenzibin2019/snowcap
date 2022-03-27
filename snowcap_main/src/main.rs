@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "Problem has {} modifiers",
                 initial_config.get_diff(&final_config).modifiers.len()
             );
-
+            
             // generate the update sequence
             info!("Generating the update sequence");
             let start_time = Instant::now();
