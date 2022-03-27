@@ -31,11 +31,13 @@ use log::*;
 use rand::prelude::*;
 use std::error::Error;
 use std::fmt;
+use std::time::Instant;
 
 mod example_topologies;
 use example_topologies::*;
 mod transient_violation;
 use transient_violation::*;
+
 
 fn main() -> Result<(), Box<dyn Error>> {
     // run clap
@@ -116,6 +118,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // generate the update sequence
             info!("Generating the update sequence");
+            let start_time = Instant::now();
             let sequence = if use_tree {
                 PermutationStrategy::<RandomTreePermutator>::synthesize(
                     net.clone(),
@@ -142,6 +145,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .collect::<Vec<_>>()
                     .join("\n    "),
             );
+            let duration = start_time.elapsed();
+            info!("Synthesize time is {:?}", duration);
         }
         MainCommand::Runtime {
             network,

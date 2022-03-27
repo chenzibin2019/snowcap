@@ -21,6 +21,9 @@ use crate::hard_policies::HardPolicy;
 use crate::netsim::config::Config;
 use crate::netsim::Network;
 
+mod mynet;
+pub use mynet::MyNet;
+
 mod simplenet;
 pub use simplenet::SimpleNet;
 

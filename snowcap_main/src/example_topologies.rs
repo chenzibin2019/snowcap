@@ -40,6 +40,7 @@ pub enum Topology {
     SimpleNet,
     SmallNet,
     StateSpecificChainGadget,
+    MyNet,
 }
 
 impl fmt::Display for Topology {
@@ -90,6 +91,9 @@ impl fmt::Display for Topology {
             Topology::StateSpecificChainGadget => {
                 write!(f, "StateSpecificChainGadget")
             }
+            Topology::MyNet => {
+                write!(f, "MyNet")
+            },
         }
     }
 }
@@ -1719,5 +1723,15 @@ pub fn example_networks_scenario(
                 CurrentNet::get_policy(&net, final_variant),
             ))
         }
+        (Topology::MyNet, None) => {
+            type CurrentNet = example_networks::MyNet;
+            let net = CurrentNet::net(initial_variant);
+            Ok((
+                net.clone(),
+                CurrentNet::final_config(&net, final_variant),
+                CurrentNet::get_policy(&net, final_variant),
+            ))
+        }
+        (Topology::MyNet, Some(_)) => todo!(),
     }
 }
