@@ -21,6 +21,9 @@ use crate::hard_policies::HardPolicy;
 use crate::netsim::config::Config;
 use crate::netsim::Network;
 
+mod multias;
+pub use multias::MultiAS;
+
 mod mynet;
 pub use mynet::MyNet;
 

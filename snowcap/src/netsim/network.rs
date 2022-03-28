@@ -202,6 +202,17 @@ impl Network {
         router_id
     }
 
+    /// Zibin Modified
+    /// Add a new router to the topology. This support for customer ASID setup, which is take in as the second paramter. This
+    /// function returns the ID of the router, which can be used to reference it while confiugring
+    /// the network.
+    pub fn add_router_asid<S: Into<String>>(&mut self, name: S, asid: AsId) -> RouterId {
+        let new_router = Router::new(name.into(), self.net.add_node(()), asid);
+        let router_id = new_router.router_id();
+        self.routers.insert(router_id, new_router);
+        router_id
+    }
+
     /// Add a new external router to the topology. An external router does not process any BGP
     /// messages, it just advertises routes from outside of the network. This function returns
     /// the ID of the router, which can be used to reference it while configuring the network.
