@@ -31,7 +31,9 @@ use log::*;
 use rand::prelude::*;
 use std::error::Error;
 use std::fmt;
+use std::io::Write;
 use std::time::Instant;
+use std::fs::File;
 
 mod example_topologies;
 use example_topologies::*;
@@ -115,7 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "Problem has {} modifiers",
                 initial_config.get_diff(&final_config).modifiers.len()
             );
-            
+
             // generate the update sequence
             info!("Generating the update sequence");
             let start_time = Instant::now();
@@ -147,6 +149,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
             let duration = start_time.elapsed();
             info!("Synthesize time is {:?}", duration);
+            let mut log_file = File::create("time_log")?;
+            log_file.write_all(format!("{:?}", duration).as_bytes())?;
         }
         MainCommand::Runtime {
             network,
