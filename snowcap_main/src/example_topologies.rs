@@ -42,6 +42,7 @@ pub enum Topology {
     StateSpecificChainGadget,
     MyNet,
     MultiAS,
+    MultiRR,
 }
 
 impl fmt::Display for Topology {
@@ -97,6 +98,9 @@ impl fmt::Display for Topology {
             }
             Topology::MultiAS => {
                 write!(f, "MultiAS")
+            }
+            Topology::MultiRR => {
+                write!(f, "MultiRR")
             }
         }
     }
@@ -1747,5 +1751,15 @@ pub fn example_networks_scenario(
             ))
         }
         (Topology::MultiAS, Some(_)) => todo!(),
+        (Topology::MultiRR, None) => {
+            type CurrentNet = example_networks::MultiRR;
+            let net = CurrentNet::net(initial_variant);
+            Ok((
+                net.clone(),
+                CurrentNet::final_config(&net, final_variant),
+                CurrentNet::get_policy(&net, final_variant),
+            ))
+        }
+        (Topology::MultiRR, Some(_)) => todo!(),
     }
 }

@@ -27,6 +27,9 @@ pub use multias::MultiAS;
 mod mynet;
 pub use mynet::MyNet;
 
+mod multirr;
+pub use multirr::MultiRR;
+
 mod simplenet;
 pub use simplenet::SimpleNet;
 
