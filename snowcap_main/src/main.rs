@@ -139,7 +139,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )?
             };
 
-            info!(
+            debug!(
                 "Update sequence:\n    {}",
                 sequence
                     .iter()
@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .join("\n    "),
             );
             let duration = start_time.elapsed();
-            info!("Synthesize time is {:?}", duration);
+            info!("Version 7/5/01 Synthesize time is {:?}", duration);
             let mut log_file = File::create("time_log")?;
             log_file.write_all(format!("{:?}", duration).as_bytes())?;
         }
@@ -245,6 +245,16 @@ fn topology_zoo_scenario(
     random_root: bool,
     scenario: Scenario,
 ) -> Result<(Network, Config, HardPolicy), Box<dyn Error>> {
+    if random_root {
+        info!("Using random root!");
+    } else {
+        info!("NOT Using random root!");
+    }
+    if many_prefixes {
+        info!("There are many prefixes");
+    } else {
+        info!("Not many prefixes");
+    }
     Ok(ZooTopology::new(&gml_file, seed)?.apply_scenario(
         scenario.into(),
         random_root,
@@ -515,6 +525,9 @@ pub enum Scenario {
     /// modifier, which adds an eBGP session.
     #[clap(name = "TransientRev")]
     VerifyTransientConditionReverse,
+    /// Zibin: TopologyZoo - MultiRR
+    #[clap(name = "MultiRR")]
+    MultiRR,
 }
 
 impl fmt::Display for Scenario {
@@ -562,6 +575,9 @@ impl fmt::Display for Scenario {
             Scenario::VerifyTransientConditionReverse => {
                 write!(f, "VerifyTransientConditionReverse")
             }
+            Scenario::MultiRR => {
+                write!(f, "MultiRR")
+            }
         }
     }
 }
@@ -571,6 +587,7 @@ impl Into<topology_zoo::Scenario> for Scenario {
     fn into(self) -> topology_zoo::Scenario {
         match self {
             Scenario::FullMesh2RouteReflector => topology_zoo::Scenario::FullMesh2RouteReflector,
+            Scenario::MultiRR => topology_zoo::Scenario::MultiRR,
             Scenario::RouteReflector2FullMesh => topology_zoo::Scenario::RouteReflector2FullMesh,
             Scenario::DoubleIgpWeight => topology_zoo::Scenario::DoubleIgpWeight,
             Scenario::HalveIgpWeight => topology_zoo::Scenario::HalveIgpWeight,

@@ -104,7 +104,7 @@ pub fn parse_gml_graph(
                         AsId(current_as_id)
                     };
                     let node_idx =
-                        g.add_node(NodeData { name, external: ext, as_id, net_idx: None });
+                        g.add_node(NodeData { name, external: ext, as_id, net_idx: None, uid: id });
                     let id = id.ok_or(GmlError::NodeMissingId(i))?;
                     if node_lookup.contains_key(&id) {
                         return Err(GmlError::NodeIdNotUnique(i));

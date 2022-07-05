@@ -784,7 +784,7 @@ impl ExampleNetwork for AbileneNetwork {
             c.add(BgpSession { source: hs, target: ip, session_type: IBgpPeer }).unwrap();
             c.add(BgpSession { source: dv, target: sv, session_type: IBgpClient }).unwrap();
             c.add(BgpSession { source: dv, target: se, session_type: IBgpClient }).unwrap();
-            c.add(BgpSession { source: dv, target: ks, session_type: IBgpClient }).unwrap();
+            c.add(BgpSession { source: dv, target: ks, session_type: IBgpClient }).unwrap();        // try to exchange dv with ks 
             c.add(BgpSession { source: hs, target: la, session_type: IBgpClient }).unwrap();
             c.add(BgpSession { source: hs, target: at, session_type: IBgpClient }).unwrap();
             c.add(BgpSession { source: ip, target: ch, session_type: IBgpClient }).unwrap();

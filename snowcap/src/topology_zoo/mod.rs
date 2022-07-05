@@ -281,6 +281,124 @@ impl ZooTopology {
                     None,
                 );
             }
+            // Zibin: Add scenario: Single level RR to Multi-level RR (MultiRR)
+            Scenario::MultiRR => {
+                self.randomize_link_weights(max_weight);
+                // build initial config
+                let mut sorted_internal_nodes = self
+                    .graph
+                    .node_indices()
+                    .into_iter()
+                    .filter(|x| !self.graph.node_weight(*x).unwrap().external)
+                    .collect::<Vec<_>>();
+                sorted_internal_nodes.sort_by_key(|x| self.graph.node_weight(*x).unwrap().uid);
+                let number_of_internal_nodes = sorted_internal_nodes.iter().count();
+                let mut number_cores = number_of_internal_nodes * 0.5 as usize;
+                if number_cores < 2 {
+                    number_cores = 2;
+                }
+                self.multi_rr_initial(&sorted_internal_nodes, number_cores)?;
+                let config_a = self.get_config()?;
+                let mut config_b = Config::new();
+                // copy IGP conf
+                for expr in config_a.iter() {
+                    match expr.clone() {
+                        ConfigExpr::IgpLinkWeight { source, target, weight } => {
+                            debug!(
+                                "Copied IGP link weight {} <-> {}, {:.0}",
+                                self.graph.node_weight(source).unwrap().name,
+                                self.graph.node_weight(target).unwrap().name,
+                                weight
+                            );
+                            config_b
+                                .add(ConfigExpr::IgpLinkWeight { source, target, weight })
+                                .unwrap();
+                        }
+                        _e => (),
+                    };
+                }
+
+                // assert_eq!(1, 2);
+                // target configuration for MultiRR..
+                // get most import RR from cores..
+                let important = self
+                    .graph
+                    .node_indices()
+                    .into_iter()
+                    .filter(|x| !self.graph.node_weight(*x).unwrap().external)
+                    .filter(|x| {
+                        self.graph.node_weight(*x).unwrap().uid
+                            <= self
+                                .graph
+                                .node_weight(sorted_internal_nodes[number_cores - 1])
+                                .unwrap()
+                                .uid
+                    })
+                    .max_by_key(|x| {
+                        self.graph
+                            .neighbors(*x)
+                            .filter(|n| !self.graph.node_weight(*n).unwrap().external)
+                            .count()
+                    })
+                    .ok_or(ZooTopologyError::TooFewInternalRouters)?;
+                // add to-RR config to config_b
+                for core in 0..number_cores {
+                    if self.graph.node_weight(sorted_internal_nodes[core]).unwrap().uid
+                        == self.graph.node_weight(important).unwrap().uid
+                    {
+                        continue;
+                    }
+                    config_b
+                        .add(ConfigExpr::BgpSession {
+                            source: important,
+                            target: sorted_internal_nodes[core],
+                            session_type: IBgpClient,
+                        })
+                        .unwrap();
+                }
+                // connect fellow to-RR sessions, same as initial conf
+                let mut core_id = 0;
+                for client in number_cores..number_of_internal_nodes {
+                    config_b
+                        .add(ConfigExpr::BgpSession {
+                            source: sorted_internal_nodes[core_id],
+                            target: sorted_internal_nodes[client],
+                            session_type: IBgpClient,
+                        })
+                        .unwrap();
+                    core_id += 1;
+                    if core_id >= number_cores {
+                        core_id = 0;
+                    }
+                }
+                /////// EBGP
+                for external_router in self
+                    .graph
+                    .node_indices()
+                    .into_iter()
+                    .filter(|x| self.graph.node_weight(*x).unwrap().external)
+                {
+                    for neighbor in self.graph.neighbors(external_router) {
+                        let ext_net_idx =
+                            self.graph.node_weight(external_router).unwrap().net_idx.unwrap();
+                        let int_net_idx =
+                            self.graph.node_weight(neighbor).unwrap().net_idx.unwrap();
+                        trace!(
+                            "Add eBGP session: {} --> {}",
+                            self.graph.node_weight(int_net_idx).unwrap().name,
+                            self.graph.node_weight(ext_net_idx).unwrap().name,
+                        );
+                        config_b
+                            .add(BgpSession {
+                                source: ext_net_idx,
+                                target: int_net_idx,
+                                session_type: EBgp,
+                            })
+                            .unwrap();
+                    }
+                }
+                (config_a, config_b)
+            }
         };
 
         // inverse the configuration if necessary
@@ -335,6 +453,38 @@ impl ZooTopology {
         };
 
         Ok((net, config_b, hard_policy))
+    }
+
+    /// Zibin: Add member function ->
+    /// Construct initial configuration for MultiRR Case
+    pub fn multi_rr_initial(
+        &mut self,
+        sorted_internal_nodes: &Vec<NodeIndex>,
+        core_node_count: usize,
+    ) -> Result<&mut Self, ZooTopologyError> {
+        // clear ibgp graph
+        self.ibgp_roots.drain();
+        self.ibgp_graph.clear_edges();
+
+        let internal_node_counts = sorted_internal_nodes.iter().count();
+
+        let core = sorted_internal_nodes[0..core_node_count].to_vec();
+        self.ibgp_roots = core.into_iter().collect();
+
+        let mut core_id = 0;
+        for client in core_node_count..internal_node_counts {
+            self.ibgp_graph.add_edge(
+                sorted_internal_nodes[core_id],
+                sorted_internal_nodes[client],
+                (),
+            );
+            core_id += 1;
+            if core_id >= core_node_count {
+                core_id = 0;
+            }
+        }
+
+        Ok(self)
     }
 
     /// Applies the transient condition scenario, and returns (if possible) the tuple `Network`,
@@ -1180,6 +1330,13 @@ impl ZooTopology {
                 self.graph.node_weight(dst).unwrap().name,
                 weight
             );
+
+            debug!(
+                "Configure link {} <--> {}, weight: {:.0}",
+                self.graph.node_weight(src).unwrap().name,
+                self.graph.node_weight(dst).unwrap().name,
+                weight
+            );
             c.add(IgpLinkWeight { source: src_net_idx, target: dst_net_idx, weight })
                 .map_err(|_| ZooTopologyError::MultipleLinkWeights)?;
             c.add(IgpLinkWeight { target: src_net_idx, source: dst_net_idx, weight })
@@ -1418,12 +1575,15 @@ pub enum Scenario {
     /// Test scenario for verifying transient state conditions. This scenario contains only a single
     /// modifier, which adds an eBGP session.
     VerifyTransientConditionReverse,
+    /// Zibin: MltiRRCase
+    MultiRR,
 }
 
 impl Scenario {
     fn is_inverse(&self) -> bool {
         match self {
             Scenario::FullMesh2RouteReflector
+            | Scenario::MultiRR
             | Scenario::DoubleIgpWeight
             | Scenario::IntroduceSecondRouteReflector
             | Scenario::NetworkAcquisition
@@ -1452,6 +1612,8 @@ pub struct NodeData {
     pub as_id: AsId,
     /// The index of the node in `netsim::network::Network`
     pub net_idx: Option<RouterId>,
+    /// unique id
+    pub uid: Option<usize>,
 }
 
 #[cfg(test)]
