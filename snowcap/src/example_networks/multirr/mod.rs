@@ -23,12 +23,21 @@ impl ExampleNetwork for MultiRR {
             let core_router = net.add_router(format!("core_{}", core));
             for client in 1..4 {
                 let client_router = net.add_router(format!("client_{}_{}", core, client));
+                let igp_w = core + client + 100;
                 // connect core router with client router
                 net.add_link(core_router, client_router);
-                cf.add(IgpLinkWeight { source: core_router, target: client_router, weight: 1.0 })
-                    .unwrap();
-                cf.add(IgpLinkWeight { target: core_router, source: client_router, weight: 1.0 })
-                    .unwrap();
+                cf.add(IgpLinkWeight {
+                    source: core_router,
+                    target: client_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
+                cf.add(IgpLinkWeight {
+                    target: core_router,
+                    source: client_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
                 cf.add(BgpSession {
                     source: core_router,
                     target: client_router,
@@ -75,11 +84,20 @@ impl ExampleNetwork for MultiRR {
             let core1_router = net.get_router_id(format!("core_{}", core1)).unwrap();
             for core2 in 1..core1 {
                 let core2_router = net.get_router_id(format!("core_{}", core2)).unwrap();
+                let igp_w = core1 + core2;
                 net.add_link(core1_router, core2_router);
-                cf.add(IgpLinkWeight { source: core1_router, target: core2_router, weight: 1.0 })
-                    .unwrap();
-                cf.add(IgpLinkWeight { source: core2_router, target: core1_router, weight: 1.0 })
-                    .unwrap();
+                cf.add(IgpLinkWeight {
+                    source: core1_router,
+                    target: core2_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
+                cf.add(IgpLinkWeight {
+                    source: core2_router,
+                    target: core1_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
                 cf.add(BgpSession {
                     source: core1_router,
                     target: core2_router,
@@ -105,11 +123,20 @@ impl ExampleNetwork for MultiRR {
             for client in 1..4 {
                 let client_router =
                     net.get_router_id(format!("client_{}_{}", core, client)).unwrap();
+                let igp_w = core + client + 100;
                 // connect core router with client router
-                cf.add(IgpLinkWeight { source: core_router, target: client_router, weight: 1.0 })
-                    .unwrap();
-                cf.add(IgpLinkWeight { target: core_router, source: client_router, weight: 1.0 })
-                    .unwrap();
+                cf.add(IgpLinkWeight {
+                    source: core_router,
+                    target: client_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
+                cf.add(IgpLinkWeight {
+                    target: core_router,
+                    source: client_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
                 cf.add(BgpSession {
                     source: core_router,
                     target: client_router,
@@ -145,10 +172,19 @@ impl ExampleNetwork for MultiRR {
             let core1_router = net.get_router_id(format!("core_{}", core1)).unwrap();
             for core2 in 1..core1 {
                 let core2_router = net.get_router_id(format!("core_{}", core2)).unwrap();
-                cf.add(IgpLinkWeight { source: core1_router, target: core2_router, weight: 1.0 })
-                    .unwrap();
-                cf.add(IgpLinkWeight { source: core2_router, target: core1_router, weight: 1.0 })
-                    .unwrap();
+                let igp_w = core1 + core2;
+                cf.add(IgpLinkWeight {
+                    source: core1_router,
+                    target: core2_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
+                cf.add(IgpLinkWeight {
+                    source: core2_router,
+                    target: core1_router,
+                    weight: igp_w as f32,
+                })
+                .unwrap();
 
                 if core1 == 1 {
                     cf.add(BgpSession {

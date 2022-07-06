@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .join("\n    "),
             );
             let duration = start_time.elapsed();
-            info!("Version 7/5/01 Synthesize time is {:?}", duration);
+            info!("Version 7/5/02 Synthesize time is {:?}", duration);
             let mut log_file = File::create("time_log")?;
             log_file.write_all(format!("{:?}", duration).as_bytes())?;
         }
